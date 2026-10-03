@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GameDev Buddy</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="app-shell">
+    <header class="hero">
+      <p class="eyebrow">Game development planner</p>
+      <h1>Build your game one practical step at a time.</h1>
+      <p class="intro">Describe your idea. GameDev Buddy turns it into a focused, beginner-friendly MVP plan.</p>
+    </header>
+
+    <section class="panel form-panel" aria-labelledby="form-title">
+      <div class="panel-heading">
+        <div>
+          <p class="section-label">Project brief</p>
+          <h2 id="form-title">Tell us what you want to make</h2>
+        </div>
+        <p class="helper">Start small. Example: “A top-down wizard game where players survive waves for two minutes.”</p>
+      </div>
+
+      <form id="idea-form">
+        <div class="field field-wide">
+          <label for="game-idea">Game idea</label>
+          <textarea id="game-idea" name="game_idea" placeholder="Describe core player action, setting, and win condition." required></textarea>
+        </div>
+
+        <div class="field">
+          <label for="engine">Engine</label>
+          <select id="engine" name="engine" required>
+            <option value="Godot">Godot</option>
+            <option value="Unity">Unity</option>
+            <option value="Unreal Engine">Unreal Engine</option>
+            <option value="GameMaker">GameMaker</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="experience-level">Experience level</label>
+          <select id="experience-level" name="experience_level" required>
+            <option value="Beginner">Beginner</option>
+            <option value="Some experience">Some experience</option>
+            <option value="Experienced">Experienced</option>
+          </select>
+        </div>
+
+        <div class="field field-wide">
+          <label for="biggest-problem">Biggest problem</label>
+          <textarea id="biggest-problem" name="biggest_problem" placeholder="Example: I do not know what system to build first." required></textarea>
+        </div>
+
+        <div class="form-actions">
+          <button id="submit-button" type="submit">
+            <span class="button-text">Generate development plan</span>
+            <span class="button-loading" hidden>Building plan...</span>
+          </button>
+          <p id="status" role="status" aria-live="polite"></p>
+        </div>
+      </form>
+    </section>
+
+    <section id="result" class="panel result-panel" aria-labelledby="result-title" hidden>
+      <div class="result-heading">
+        <div>
+          <p class="section-label">Your MVP plan</p>
+          <h2 id="result-title">Build this first</h2>
+        </div>
+        <button id="reset-button" class="secondary-button" type="button">New idea</button>
+      </div>
+
+      <div class="plan-grid">
+        <article class="plan-section goal-section">
+          <h3>Goal</h3>
+          <p id="goal"></p>
+        </article>
+        <article class="plan-section">
+          <h3>Core Gameplay Loop</h3>
+          <p id="core-loop"></p>
+        </article>
+        <article class="plan-section">
+          <h3>Recommended Systems</h3>
+          <ul id="recommended-systems"></ul>
+        </article>
+        <article class="plan-section">
+          <h3>Development Order</h3>
+          <ol id="development-order"></ol>
+        </article>
+      </div>
+
+      <article class="next-step">
+        <p class="section-label">Next step</p>
+        <p id="next-step"></p>
+      </article>
+    </section>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>
