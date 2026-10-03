@@ -1,31 +1,14 @@
 # GameDev Buddy
 
-GameDev Buddy is a small AI-powered planning assistant for beginner game developers. Describe a game idea, current skill level, and main blocker; it turns that brief into a concise, practical MVP development plan using local Ollama inference.
+GameDev Buddy is a small AI-powered planning assistant for beginner game developers. It turns a game idea, chosen engine, experience level, and main blocker into a concise MVP development plan.
 
 ## What It Does
 
-Provide:
-
-- Game idea
-- Engine
-- Experience level
-- Biggest problem
-
-GameDev Buddy generates:
-
-- Goal
-- Core gameplay loop
-- Recommended systems
-- Development order
-- Next step
-
-Plans prioritize small playable MVPs, practical implementation, and dependency-aware build order.
+Provide game idea, engine, experience level, and biggest problem. GameDev Buddy generates goal, core gameplay loop, recommended systems, development order, and next step.
 
 ## Why Open-Source AI
 
-GameDev Buddy sends prompts to open-weight Gemma 3 4B through local Ollama HTTP API. Inference can run locally and no external AI API key is required. Set `OLLAMA_MODEL` to choose installed model.
-
-`backend/ollama.py` owns Ollama communication; planning and FastAPI request handling remain separate. Open models make local experimentation and modification more accessible.
+GameDev Buddy sends prompts to open-weight Gemma 3 4B through Ollama HTTP API. Inference can run locally and no external AI API key is required. `backend/ollama.py` owns Ollama communication; planning and FastAPI request handling remain separate.
 
 ## Tech Stack
 
@@ -51,73 +34,75 @@ Structured JSON
 Browser
 ```
 
-## Running Locally
+## Local Development
 
 Requires Python 3.10+ and Ollama.
 
-1. Clone repository:
+```powershell
+git clone <repository-url>
+cd gamedev-buddy
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+ollama serve
+```
 
-   ```powershell
-   git clone <repository-url>
-   cd gamedev-buddy
-   ```
+In another terminal:
 
-2. Create virtual environment:
+```powershell
+ollama pull gemma3:4b
+uvicorn backend.main:app --reload
+```
 
-   ```powershell
-   python -m venv .venv
-   ```
-
-3. Activate it:
-
-   ```powershell
-   .\.venv\Scripts\Activate.ps1
-   ```
-
-4. Install Python requirements:
-
-   ```powershell
-   pip install -r requirements.txt
-   ```
-
-5. Make sure Ollama is installed and running. Start it if needed:
-
-   ```powershell
-   ollama serve
-   ```
-
-6. Pull default configured model:
-
-   ```powershell
-   ollama pull gemma3:4b
-   ```
-
-7. Start FastAPI:
-
-   ```powershell
-   uvicorn backend.main:app --reload
-   ```
-
-8. Open `http://127.0.0.1:8000`.
-
-No frontend build step is required.
+Open `http://127.0.0.1:8000`.
 
 ## Configuration
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `OLLAMA_MODEL` | `gemma3:4b` | Ollama model used for generation |
+| `OLLAMA_HOST` | `http://127.0.0.1:11434` | Base URL for reachable Ollama service |
+| `OLLAMA_MODEL` | `gemma3:4b` | Ollama model used for plan generation |
+| `PORT` | `8000` | FastAPI HTTP port |
 
-Set another installed model for current PowerShell session:
+`OLLAMA_HOST` must be an `http` or `https` base URL without a path.
+
+## Docker
+
+The Docker image starts Ollama privately on `127.0.0.1:11434`, pulls `OLLAMA_MODEL` if needed, then starts FastAPI on `0.0.0.0:$PORT`. Port `11434` is not exposed.
+
+Build and run with locally reachable Ollama outside container:
 
 ```powershell
-$env:OLLAMA_MODEL = "gemma3:4b"
-uvicorn backend.main:app --reload
+docker build -t gamedev-buddy .
+docker run --rm -p 8000:8000 -e OLLAMA_HOST=http://host.docker.internal:11434 -e OLLAMA_MODEL=gemma3:4b gamedev-buddy
 ```
 
-Ollama API address is fixed in application code at `http://127.0.0.1:11434/api/generate`.
+## Render Demo Deployment
+
+Use a Render **Web Service** with Docker runtime and `Dockerfile` at repository root. Do not set a custom Docker command; image entrypoint starts both services.
+
+Set:
+
+```text
+OLLAMA_HOST=http://127.0.0.1:11434
+OLLAMA_MODEL=gemma3:4b
+```
+
+Do not set `PORT`; Render injects it. Set health-check path to `/health`. Ollama remains private inside container; only FastAPI listens on Render public port.
+
+Model is pulled at container startup, not Docker build. This keeps image smaller and lets `OLLAMA_MODEL` stay runtime-configurable. First boot downloads model; without persistent disk, restarts download it again. Attach Render persistent disk mounted at `/root/.ollama` to retain model data between restarts.
+
+This project does not claim public deployment is live. Render must provide enough RAM, disk, and CPU for Gemma 3 4B before service creation.
 
 ## API
+
+### `GET /health`
+
+```json
+{
+  "status": "ok"
+}
+```
 
 ### `POST /api/generate-plan`
 
@@ -138,58 +123,46 @@ Response:
 {
   "goal": "Make a playable rock-dodging game.",
   "core_loop": "Move, avoid rocks, and survive.",
-  "recommended_systems": [
-    "Player movement",
-    "Rock spawner",
-    "Collision detection"
-  ],
-  "development_order": [
-    "Create player movement",
-    "Add falling rocks",
-    "Detect collisions"
-  ],
+  "recommended_systems": ["Player movement", "Rock spawner", "Collision detection"],
+  "development_order": ["Create player movement", "Add falling rocks", "Detect collisions"],
   "next_step": "Create a player scene that moves left and right."
 }
 ```
 
-All request fields are required non-empty strings; extra fields return HTTP `422`. Ollama failures return HTTP `503`. Invalid model output returns HTTP `502`.
+All request fields are required non-empty strings. Limits: game idea 2,000 characters, engine and experience level 100 each, biggest problem 1,000. Invalid requests return HTTP `422`; Ollama failures return `503`; invalid model output returns `502`.
 
 ## Testing
 
-Run automated backend tests from repository root:
-
 ```powershell
 .\.venv\Scripts\python.exe -m unittest discover -s backend -p "test_*.py" -v
+node --check frontend\app.js
 ```
-
-Current automated suite has 5 passing tests covering valid input/output, missing input, malformed model output, and Ollama unavailability.
-
-Real-world validation ran five game-development scenarios through local Ollama/Gemma: beginner platformer, arena roguelike, overscoped RPG, combat-improvement problem, and Unreal horror game. All returned valid structured responses. Invalid requests correctly returned HTTP `422`. Live browser flow was verified: frontend → FastAPI → Ollama → Gemma → UI.
-
-Scope reduction was only partially successful in overscoped RPG scenario; model still retained some extra systems.
 
 ## Project Structure
 
 ```text
 frontend/
-  index.html       Single-page interface
-  styles.css       Responsive UI styles
-  app.js           Form submission and plan rendering
+  index.html
+  styles.css
+  app.js
 backend/
-  main.py          FastAPI app and API routes
-  ollama.py        Local Ollama HTTP service
-  plans.py         Plan models, prompt, and response parsing
-  test_plans.py    Plan tests
-  test_ollama.py   Ollama service check
-requirements.txt   Python dependencies
-README.md          Project documentation
+  main.py
+  ollama.py
+  plans.py
+  test_plans.py
+  test_ollama.py
+Dockerfile
+start.sh
+requirements.txt
+README.md
 ```
 
 ## Limitations
 
-- Output quality depends on local model.
+- Output quality depends on configured model.
 - Scope reduction is not always aggressive enough.
 - This is an MVP, not a full game project management system.
+- A self-hosted Gemma 3 4B demo needs substantial model storage and runtime memory.
 
 ## Hacktoberfest 2026
 

@@ -18,10 +18,10 @@ Keep every value concise. Do not use markdown or add any other keys."""
 class PlanRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
-    game_idea: str = Field(min_length=1)
-    engine: str = Field(min_length=1)
-    experience_level: str = Field(min_length=1)
-    biggest_problem: str = Field(min_length=1)
+    game_idea: str = Field(min_length=1, max_length=2000)
+    engine: str = Field(min_length=1, max_length=100)
+    experience_level: str = Field(min_length=1, max_length=100)
+    biggest_problem: str = Field(min_length=1, max_length=1000)
 
 
 class DevelopmentPlan(BaseModel):

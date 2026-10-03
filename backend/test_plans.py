@@ -4,7 +4,7 @@ from unittest.mock import patch
 from fastapi import HTTPException
 from pydantic import ValidationError
 
-from backend.main import generate_plan
+from backend.main import generate_plan, health
 from backend.ollama import OllamaUnavailableError
 from backend.plans import PlanRequest, parse_plan
 
@@ -31,6 +31,15 @@ VALID_RESPONSE = """{
 
 
 class GeneratePlanTests(unittest.TestCase):
+    def test_health(self):
+        self.assertEqual(health(), {"status": "ok"})
+
+    def test_input_too_long(self):
+        request = VALID_REQUEST | {"game_idea": "x" * 2001}
+
+        with self.assertRaises(ValidationError):
+            PlanRequest.model_validate(request)
+
     def test_valid_request(self):
         request = PlanRequest.model_validate(VALID_REQUEST)
 

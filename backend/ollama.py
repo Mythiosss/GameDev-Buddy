@@ -1,14 +1,29 @@
 import json
 import os
 from urllib.error import HTTPError, URLError
+from urllib.parse import urlsplit
 from urllib.request import Request, urlopen
 
-OLLAMA_API_URL = "http://127.0.0.1:11434/api/generate"
+DEFAULT_OLLAMA_HOST = "http://127.0.0.1:11434"
 DEFAULT_MODEL = "gemma3:4b"
 
 
 class OllamaUnavailableError(RuntimeError):
     pass
+
+
+def get_ollama_api_url() -> str:
+    host = os.getenv("OLLAMA_HOST", DEFAULT_OLLAMA_HOST).strip().rstrip("/")
+    parsed_host = urlsplit(host)
+    if (
+        parsed_host.scheme not in {"http", "https"}
+        or not parsed_host.netloc
+        or parsed_host.path not in {"", "/"}
+        or parsed_host.query
+        or parsed_host.fragment
+    ):
+        raise OllamaUnavailableError("OLLAMA_HOST must be an HTTP URL without a path")
+    return f"{host}/api/generate"
 
 
 def generate(
@@ -28,7 +43,7 @@ def generate(
 
     payload = json.dumps(request_body).encode("utf-8")
     request = Request(
-        OLLAMA_API_URL,
+        get_ollama_api_url(),
         data=payload,
         headers={"Content-Type": "application/json"},
         method="POST",

@@ -1,5 +1,7 @@
+import os
 from pathlib import Path
 
+import uvicorn
 from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -13,6 +15,11 @@ frontend_dir = Path(__file__).resolve().parent.parent / "frontend"
 
 class PromptRequest(BaseModel):
     prompt: str = Field(min_length=1)
+
+
+@app.get("/health")
+def health() -> dict[str, str]:
+    return {"status": "ok"}
 
 
 @app.post("/api/test-ollama")
@@ -39,3 +46,7 @@ def generate_plan(request: PlanRequest) -> DevelopmentPlan:
 
 
 app.mount("/", StaticFiles(directory=frontend_dir, html=True), name="frontend")
+
+
+if __name__ == "__main__":
+    uvicorn.run("backend.main:app", host="0.0.0.0", port=int(os.getenv("PORT", "8000")))
